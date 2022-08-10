@@ -14,6 +14,15 @@ type alias Model =
     , x : Float
     , y : Float
     , mouseDown : Maybe ( Float, Float )
+    , bullets : List Bullet
+    }
+
+
+type alias Bullet =
+    { x : Float
+    , y : Float
+    , vx : Float
+    , vy : Float
     }
 
 
@@ -24,6 +33,8 @@ init _ =
       , x = 0
       , y = 0
       , mouseDown = Nothing
+      , bullets =
+            [ Bullet 50 50 3 3 ]
       }
     , Cmd.none
     )
@@ -71,8 +82,26 @@ update msg model =
 
                     else
                         0
+
+                newBullets =
+                    List.filterMap
+                        (\bullet ->
+                            let
+                                newX =
+                                    bullet.x + bullet.vx
+
+                                newY =
+                                    bullet.y + bullet.vy
+                            in
+                            if newX < 0 || newX > 400 || newY < 0 || newY > 400 then
+                                Nothing
+
+                            else
+                                Just { bullet | x = newX, y = newY }
+                        )
+                        model.bullets
             in
-            ( { model | y = model.y + dy, x = model.x + dx }, Cmd.none )
+            ( { model | y = model.y + dy, x = model.x + dx, bullets = newBullets }, Cmd.none )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
@@ -96,6 +125,19 @@ view model =
             , HA.style "top" (px model.y)
             ]
             []
+        , Html.div
+            []
+            (List.map
+                (\bullet ->
+                    Html.div
+                        [ HA.class "bullet"
+                        , HA.style "left" (px bullet.x)
+                        , HA.style "top" (px bullet.y)
+                        ]
+                        []
+                )
+                model.bullets
+            )
         , Html.div [ HA.style "color" "white" ]
             [ Html.text
                 (case model.mouseDown of
