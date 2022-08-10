@@ -4,7 +4,7 @@ import Browser
 import Browser.Events as BE
 import Html exposing (Html)
 import Html.Attributes as HA
-import Json.Decode
+import Json.Decode as JD
 import Set exposing (Set)
 
 
@@ -13,6 +13,7 @@ type alias Model =
     , keysDown : Set String
     , x : Float
     , y : Float
+    , mouseDown : Maybe ( Float, Float )
     }
 
 
@@ -22,6 +23,7 @@ init _ =
       , keysDown = Set.empty
       , x = 0
       , y = 0
+      , mouseDown = Nothing
       }
     , Cmd.none
     )
@@ -31,6 +33,8 @@ type Msg
     = Tick Float
     | KeyDown String
     | KeyUp String
+    | MouseDown ( Float, Float )
+    | MouseUp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -76,6 +80,12 @@ update msg model =
         KeyUp key ->
             ( { model | keysDown = Set.remove key model.keysDown }, Cmd.none )
 
+        MouseDown mouseXY ->
+            ( { model | mouseDown = Just mouseXY }, Cmd.none )
+
+        MouseUp ->
+            ( { model | mouseDown = Nothing }, Cmd.none )
+
 
 view : Model -> Html Msg
 view model =
@@ -86,6 +96,16 @@ view model =
             , HA.style "top" (px model.y)
             ]
             []
+        , Html.div [ HA.style "color" "white" ]
+            [ Html.text
+                (case model.mouseDown of
+                    Nothing ->
+                        "mouseup"
+
+                    Just ( mouseX, mouseY ) ->
+                        "mousedown x = " ++ px mouseX ++ ", y = " ++ px mouseY
+                )
+            ]
         ]
 
 
@@ -99,13 +119,19 @@ subscriptions model =
     Sub.batch
         [ BE.onAnimationFrameDelta Tick
         , BE.onKeyDown
-            (Json.Decode.field "key" Json.Decode.string
-                |> Json.Decode.map KeyDown
+            (JD.field "key" JD.string
+                |> JD.map KeyDown
             )
         , BE.onKeyUp
-            (Json.Decode.field "key" Json.Decode.string
-                |> Json.Decode.map KeyUp
+            (JD.field "key" JD.string
+                |> JD.map KeyUp
             )
+        , BE.onMouseDown
+            (JD.map2 (\x y -> MouseDown ( x, y ))
+                (JD.field "clientX" JD.float)
+                (JD.field "clientY" JD.float)
+            )
+        , BE.onMouseUp (JD.succeed MouseUp)
         ]
 
 
