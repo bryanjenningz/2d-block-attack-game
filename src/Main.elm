@@ -30,11 +30,10 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { lastUpdate = 0
       , keysDown = Set.empty
-      , x = 0
-      , y = 0
+      , x = 200
+      , y = 200
       , mouseDown = Nothing
-      , bullets =
-            [ Bullet 50 50 3 3 ]
+      , bullets = []
       }
     , Cmd.none
     )
@@ -109,8 +108,35 @@ update msg model =
         KeyUp key ->
             ( { model | keysDown = Set.remove key model.keysDown }, Cmd.none )
 
-        MouseDown mouseXY ->
-            ( { model | mouseDown = Just mouseXY }, Cmd.none )
+        MouseDown ( mouseX, mouseY ) ->
+            let
+                dx =
+                    mouseX - model.x
+
+                dy =
+                    mouseY - model.y
+
+                angle =
+                    atan (dy / dx)
+
+                sign =
+                    if dx < 0 then
+                        -1
+
+                    else
+                        1
+            in
+            ( { model
+                | mouseDown = Just ( mouseX, mouseY )
+                , bullets =
+                    Bullet model.x
+                        model.y
+                        (sign * 5 * cos angle)
+                        (sign * 5 * sin angle)
+                        :: model.bullets
+              }
+            , Cmd.none
+            )
 
         MouseUp ->
             ( { model | mouseDown = Nothing }, Cmd.none )
@@ -138,16 +164,6 @@ view model =
                 )
                 model.bullets
             )
-        , Html.div [ HA.style "color" "white" ]
-            [ Html.text
-                (case model.mouseDown of
-                    Nothing ->
-                        "mouseup"
-
-                    Just ( mouseX, mouseY ) ->
-                        "mousedown x = " ++ px mouseX ++ ", y = " ++ px mouseY
-                )
-            ]
         ]
 
 
