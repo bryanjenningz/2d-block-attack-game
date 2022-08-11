@@ -5,6 +5,7 @@ import Browser.Events as BE
 import Html exposing (Html)
 import Html.Attributes as HA
 import Json.Decode as JD
+import Random
 import Set exposing (Set)
 
 
@@ -26,6 +27,7 @@ type alias Model =
     , mouseDown : Maybe ( Float, Float )
     , bullets : List Bullet
     , monsters : List Monster
+    , monsterBullets : List Bullet
     }
 
 
@@ -53,6 +55,7 @@ init _ =
       , mouseDown = Nothing
       , bullets = []
       , monsters = [ Monster 20 100 100, Monster 300 350 100 ]
+      , monsterBullets = []
       }
     , Cmd.none
     )
@@ -64,6 +67,7 @@ type Msg
     | KeyUp String
     | MouseDown ( Float, Float )
     | MouseUp
+    | MonsterBullets (List Bullet)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -143,14 +147,54 @@ update msg model =
                                 Just { monster | health = newHealth }
                         )
                         model.monsters
+
+                newMonsterBullets =
+                    List.filterMap
+                        (\bullet ->
+                            let
+                                newX =
+                                    bullet.x + bullet.vx
+
+                                newY =
+                                    bullet.y + bullet.vy
+                            in
+                            if
+                                ((newX < 0) || (newX > 400))
+                                    || ((newY < 0) || (newY > 400))
+                                    || isOverlapping bullet { x = model.x, y = model.y }
+                            then
+                                Nothing
+
+                            else
+                                Just { bullet | x = newX, y = newY }
+                        )
+                        model.monsterBullets
+
+                generateMonsterBullets =
+                    Random.list (List.length model.monsters)
+                        (Random.map (\x -> x <= 5) (Random.int 1 100))
+                        |> Random.map
+                            (\bools ->
+                                List.filterMap
+                                    (\( bool, mon ) ->
+                                        if bool then
+                                            Just (Bullet mon.x mon.y 3 3)
+
+                                        else
+                                            Nothing
+                                    )
+                                    (List.map2 (\x y -> ( x, y )) bools model.monsters)
+                            )
+                        |> Random.generate MonsterBullets
             in
             ( { model
                 | y = clamp 0 400 (model.y + dy)
                 , x = clamp 0 400 (model.x + dx)
                 , bullets = newBullets
                 , monsters = newMonsters
+                , monsterBullets = newMonsterBullets
               }
-            , Cmd.none
+            , generateMonsterBullets
             )
 
         KeyDown key ->
@@ -193,8 +237,11 @@ update msg model =
         MouseUp ->
             ( { model | mouseDown = Nothing }, Cmd.none )
 
+        MonsterBullets newMonsterBullets ->
+            ( { model | monsterBullets = model.monsterBullets ++ newMonsterBullets }, Cmd.none )
 
-isOverlapping : Bullet -> Monster -> Bool
+
+isOverlapping : Bullet -> { a | x : Float, y : Float } -> Bool
 isOverlapping bullet monster =
     ((bullet.x + bulletWidth > monster.x) && (bullet.x < monster.x + monsterWidth))
         && ((bullet.y + bulletWidth > monster.y) && (bullet.y < monster.y + monsterWidth))
@@ -233,7 +280,7 @@ view model =
                         ]
                         []
                 )
-                model.bullets
+                (model.bullets ++ model.monsterBullets)
             )
         ]
 
