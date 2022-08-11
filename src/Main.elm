@@ -143,8 +143,8 @@ update msg model =
                         model.monsters
             in
             ( { model
-                | y = model.y + dy
-                , x = model.x + dx
+                | y = clamp 0 400 (model.y + dy)
+                , x = clamp 0 400 (model.x + dx)
                 , bullets = newBullets
                 , monsters = newMonsters
               }
@@ -178,7 +178,8 @@ update msg model =
             ( { model
                 | mouseDown = Just ( mouseX, mouseY )
                 , bullets =
-                    Bullet model.x
+                    Bullet
+                        model.x
                         model.y
                         (sign * 5 * cos angle)
                         (sign * 5 * sin angle)
