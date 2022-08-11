@@ -31,19 +31,22 @@ type alias GameMap =
 
 gameMap : GameMap
 gameMap =
+    -- x = wall
+    -- m = monster spawn location
+    -- p = player spawn location
     [ "x    xxxxxxxxxxxxxxx"
-    , "x b  x             x"
-    , "x    x     b       x"
+    , "x m  x             x"
+    , "x    x     m       x"
     , "x    x             x"
     , "x    x  xxxxxxxx   x"
     , "x    x             x"
     , "x    x             x"
-    , "x        b         x"
-    , "x       xxx  b     x"
+    , "x        m         x"
+    , "x       xxx  m     x"
     , "x  xxx             x"
     , "x    x        x    x"
     , "x    x        x    x"
-    , "xxxxxx        x  b x"
+    , "xxxxxx        x  m x"
     , "x    x        x    x"
     , "x p  x             x"
     , "x    x             x"
@@ -92,6 +95,10 @@ init _ =
             gameMapPieces "p"
                 |> List.head
                 |> Maybe.withDefault { x = 200, y = 200, w = 20 }
+
+        monsters =
+            gameMapPieces "m"
+                |> List.map (\{ x, y } -> Monster x y 100 monsterWidth)
     in
     ( { lastUpdate = 0
       , keysDown = Set.empty
@@ -99,7 +106,7 @@ init _ =
       , y = player.y
       , mouseDown = Nothing
       , bullets = []
-      , monsters = [ Monster 20 100 100 monsterWidth, Monster 300 350 100 monsterWidth ]
+      , monsters = monsters
       , monsterBullets = []
       }
     , Cmd.none
