@@ -348,8 +348,8 @@ view model =
         ]
 
 
-gameMapWalls : List { x : Float, y : Float, w : Float }
-gameMapWalls =
+gameMapPieces : String -> List { x : Float, y : Float, w : Float }
+gameMapPieces piece =
     List.range 0 (Array.length gameMap - 1)
         |> List.concatMap
             (\y ->
@@ -359,12 +359,21 @@ gameMapWalls =
         |> List.filterMap
             (\( x, y ) ->
                 case Array.get y gameMap |> Maybe.andThen (Array.get x) of
-                    Just "x" ->
-                        Just { x = toFloat x * 20, y = toFloat y * 20, w = 20 }
+                    Just tile ->
+                        if tile == piece then
+                            Just { x = toFloat x * 20, y = toFloat y * 20, w = 20 }
 
-                    _ ->
+                        else
+                            Nothing
+
+                    Nothing ->
                         Nothing
             )
+
+
+gameMapWalls : List { x : Float, y : Float, w : Float }
+gameMapWalls =
+    gameMapPieces "x"
 
 
 viewGameMapWalls : Html msg
