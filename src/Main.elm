@@ -10,8 +10,8 @@ import Random
 import Set exposing (Set)
 
 
-monsterWidth : Float
-monsterWidth =
+tileWidth : Float
+tileWidth =
     20
 
 
@@ -23,6 +23,11 @@ bulletWidth =
 bulletSpeed : Float
 bulletSpeed =
     5
+
+
+bulletDamage : Float
+bulletDamage =
+    20
 
 
 type alias GameMap =
@@ -92,11 +97,11 @@ init _ =
         player =
             gameMapPieces "p"
                 |> List.head
-                |> Maybe.withDefault { x = 200, y = 200, w = 20 }
+                |> Maybe.withDefault { x = 200, y = 200, w = tileWidth }
 
         monsters =
             gameMapPieces "m"
-                |> List.map (\{ x, y } -> Monster x y 100 monsterWidth)
+                |> List.map (\{ x, y } -> Monster x y 100 tileWidth)
     in
     ( { keysDown = Set.empty
       , x = player.x
@@ -155,7 +160,7 @@ update msg model =
                 newPlayerX =
                     if
                         List.any
-                            (\wall -> isOverlapping wall { x = model.x + dx, y = model.y, w = 20 })
+                            (\wall -> isOverlapping wall { x = model.x + dx, y = model.y, w = tileWidth })
                             gameMapWalls
                     then
                         model.x
@@ -166,7 +171,7 @@ update msg model =
                 newPlayerY =
                     if
                         List.any
-                            (\wall -> isOverlapping wall { x = model.x, y = model.y + dy, w = 20 })
+                            (\wall -> isOverlapping wall { x = model.x, y = model.y + dy, w = tileWidth })
                             gameMapWalls
                     then
                         model.y
@@ -208,7 +213,7 @@ update msg model =
                                         |> List.length
 
                                 newHealth =
-                                    monster.health - toFloat bulletsHit * 20
+                                    monster.health - toFloat bulletsHit * bulletDamage
                             in
                             if newHealth <= 0 then
                                 Nothing
@@ -231,7 +236,7 @@ update msg model =
                             if
                                 ((newX < 0) || (newX > 400))
                                     || ((newY < 0) || (newY > 400))
-                                    || isOverlapping bullet { x = model.x, y = model.y, w = monsterWidth }
+                                    || isOverlapping bullet { x = model.x, y = model.y, w = tileWidth }
                                     || List.any (isOverlapping bullet) gameMapWalls
                             then
                                 Nothing
@@ -363,7 +368,7 @@ gameMapPieces piece =
                 case Array.get y gameMap |> Maybe.andThen (Array.get x) of
                     Just tile ->
                         if tile == piece then
-                            Just { x = toFloat x * 20, y = toFloat y * 20, w = 20 }
+                            Just { x = toFloat x * tileWidth, y = toFloat y * tileWidth, w = tileWidth }
 
                         else
                             Nothing
@@ -388,8 +393,8 @@ viewGameMapWalls =
                     , HA.style "left" (px x)
                     , HA.style "top" (px y)
                     , HA.style "background-color" "purple"
-                    , HA.style "width" "20px"
-                    , HA.style "height" "20px"
+                    , HA.style "width" (px tileWidth)
+                    , HA.style "height" (px tileWidth)
                     ]
                     []
             )
