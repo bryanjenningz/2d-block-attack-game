@@ -8,6 +8,16 @@ import Json.Decode as JD
 import Set exposing (Set)
 
 
+monsterWidth : Float
+monsterWidth =
+    20
+
+
+bulletWidth : Float
+bulletWidth =
+    4
+
+
 type alias Model =
     { lastUpdate : Float
     , keysDown : Set String
@@ -104,12 +114,7 @@ update msg model =
                             if
                                 ((newX < 0) || (newX > 400))
                                     || ((newY < 0) || (newY > 400))
-                                    || List.any
-                                        (\monster ->
-                                            (abs (bullet.x - monster.x) < 20)
-                                                && (abs (bullet.y - monster.y) < 20)
-                                        )
-                                        model.monsters
+                                    || List.any (isOverlapping bullet) model.monsters
                             then
                                 Nothing
 
@@ -124,10 +129,7 @@ update msg model =
                             let
                                 bulletsHit =
                                     List.filter
-                                        (\bullet ->
-                                            (abs (bullet.x - monster.x) < 20)
-                                                && (abs (bullet.y - monster.y) < 20)
-                                        )
+                                        (\bullet -> isOverlapping bullet monster)
                                         model.bullets
                                         |> List.length
 
@@ -190,6 +192,12 @@ update msg model =
 
         MouseUp ->
             ( { model | mouseDown = Nothing }, Cmd.none )
+
+
+isOverlapping : Bullet -> Monster -> Bool
+isOverlapping bullet monster =
+    ((bullet.x + bulletWidth > monster.x) && (bullet.x < monster.x + monsterWidth))
+        && ((bullet.y + bulletWidth > monster.y) && (bullet.y < monster.y + monsterWidth))
 
 
 view : Model -> Html Msg
