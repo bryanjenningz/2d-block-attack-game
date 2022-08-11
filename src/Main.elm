@@ -73,6 +73,7 @@ type alias Bullet =
     , y : Float
     , vx : Float
     , vy : Float
+    , w : Float
     }
 
 
@@ -80,6 +81,7 @@ type alias Monster =
     { x : Float
     , y : Float
     , health : Float
+    , w : Float
     }
 
 
@@ -91,7 +93,7 @@ init _ =
       , y = 200
       , mouseDown = Nothing
       , bullets = []
-      , monsters = [ Monster 20 100 100, Monster 300 350 100 ]
+      , monsters = [ Monster 20 100 100 monsterWidth, Monster 300 350 100 monsterWidth ]
       , monsterBullets = []
       }
     , Cmd.none
@@ -199,7 +201,7 @@ update msg model =
                             if
                                 ((newX < 0) || (newX > 400))
                                     || ((newY < 0) || (newY > 400))
-                                    || isOverlapping bullet { x = model.x, y = model.y }
+                                    || isOverlapping bullet { x = model.x, y = model.y, w = monsterWidth }
                                     || List.any (isOverlapping bullet) gameMapWalls
                             then
                                 Nothing
@@ -257,10 +259,10 @@ update msg model =
             ( { model | monsterBullets = model.monsterBullets ++ newMonsterBullets }, Cmd.none )
 
 
-isOverlapping : Bullet -> { a | x : Float, y : Float } -> Bool
-isOverlapping bullet monster =
-    ((bullet.x + bulletWidth > monster.x) && (bullet.x < monster.x + monsterWidth))
-        && ((bullet.y + bulletWidth > monster.y) && (bullet.y < monster.y + monsterWidth))
+isOverlapping : { a | x : Float, y : Float, w : Float } -> { b | x : Float, y : Float, w : Float } -> Bool
+isOverlapping a b =
+    ((a.x + a.w > b.x) && (a.x < b.x + b.w))
+        && ((a.y + a.w > b.y) && (a.y < b.y + b.w))
 
 
 makeBullet : { a | x : Float, y : Float } -> { b | x : Float, y : Float } -> Bullet
@@ -282,7 +284,7 @@ makeBullet a b =
             else
                 1
     in
-    Bullet a.x a.y (sign * bulletSpeed * cos angle) (sign * bulletSpeed * sin angle)
+    Bullet a.x a.y (sign * bulletSpeed * cos angle) (sign * bulletSpeed * sin angle) bulletWidth
 
 
 view : Model -> Html Msg
@@ -324,7 +326,7 @@ view model =
         ]
 
 
-gameMapWalls : List { x : Float, y : Float }
+gameMapWalls : List { x : Float, y : Float, w : Float }
 gameMapWalls =
     List.range 0 (Array.length gameMap - 1)
         |> List.concatMap
@@ -336,7 +338,7 @@ gameMapWalls =
             (\( x, y ) ->
                 case Array.get y gameMap |> Maybe.andThen (Array.get x) of
                     Just "x" ->
-                        Just { x = toFloat x * 20, y = toFloat y * 20 }
+                        Just { x = toFloat x * 20, y = toFloat y * 20, w = 20 }
 
                     _ ->
                         Nothing
