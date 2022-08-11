@@ -47,8 +47,8 @@ gameMap =
     , "x    x        x    x"
     , "x p  x             x"
     , "x    x             x"
-    , "x    x             x"
-    , "x          xxx     x"
+    , "x         xxx      x"
+    , "x                  x"
     , "x                  x"
     , "xxxxxxxxxxxxxxxxxxxx"
     ]
@@ -144,6 +144,28 @@ update msg model =
                     else
                         0
 
+                newPlayerX =
+                    if
+                        List.any
+                            (\wall -> isOverlapping wall { x = model.x + dx, y = model.y, w = 20 })
+                            gameMapWalls
+                    then
+                        model.x
+
+                    else
+                        model.x + dx
+
+                newPlayerY =
+                    if
+                        List.any
+                            (\wall -> isOverlapping wall { x = model.x, y = model.y + dy, w = 20 })
+                            gameMapWalls
+                    then
+                        model.y
+
+                    else
+                        model.y + dy
+
                 newBullets =
                     List.filterMap
                         (\bullet ->
@@ -229,8 +251,8 @@ update msg model =
                         |> Random.generate MonsterBullets
             in
             ( { model
-                | y = clamp 0 400 (model.y + dy)
-                , x = clamp 0 400 (model.x + dx)
+                | x = newPlayerX
+                , y = newPlayerY
                 , bullets = newBullets
                 , monsters = newMonsters
                 , monsterBullets = newMonsterBullets
