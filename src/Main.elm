@@ -200,6 +200,7 @@ update msg model =
                                 ((newX < 0) || (newX > 400))
                                     || ((newY < 0) || (newY > 400))
                                     || isOverlapping bullet { x = model.x, y = model.y }
+                                    || List.any (isOverlapping bullet) gameMapWalls
                             then
                                 Nothing
 
