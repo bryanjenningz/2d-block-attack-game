@@ -156,6 +156,7 @@ update msg model =
                                 ((newX < 0) || (newX > 400))
                                     || ((newY < 0) || (newY > 400))
                                     || List.any (isOverlapping bullet) model.monsters
+                                    || List.any (isOverlapping bullet) gameMapWalls
                             then
                                 Nothing
 
@@ -318,41 +319,45 @@ view model =
                 )
                 (model.bullets ++ model.monsterBullets)
             )
-        , viewGameMap gameMap
+        , viewGameMapWalls
         ]
 
 
-viewGameMap : GameMap -> Html msg
-viewGameMap map =
+gameMapWalls : List { x : Float, y : Float }
+gameMapWalls =
+    List.range 0 (Array.length gameMap - 1)
+        |> List.concatMap
+            (\y ->
+                List.range 0 (Array.length gameMap - 1)
+                    |> List.map (\x -> ( x, y ))
+            )
+        |> List.filterMap
+            (\( x, y ) ->
+                case Array.get y gameMap |> Maybe.andThen (Array.get x) of
+                    Just "x" ->
+                        Just { x = toFloat x * 20, y = toFloat y * 20 }
+
+                    _ ->
+                        Nothing
+            )
+
+
+viewGameMapWalls : Html msg
+viewGameMapWalls =
     Html.div []
-        (List.range 0 (Array.length map - 1)
-            |> List.concatMap
-                (\y ->
-                    List.range 0 (Array.length map - 1)
-                        |> List.map (\x -> ( x, y ))
-                )
-            |> List.filterMap
-                (\( x, y ) ->
-                    case Array.get y gameMap |> Maybe.andThen (Array.get x) of
-                        Nothing ->
-                            Nothing
-
-                        Just "x" ->
-                            Just
-                                (Html.div
-                                    [ HA.style "position" "absolute"
-                                    , HA.style "left" (px (toFloat x * 20))
-                                    , HA.style "top" (px (toFloat y * 20))
-                                    , HA.style "background-color" "purple"
-                                    , HA.style "width" "20px"
-                                    , HA.style "height" "20px"
-                                    ]
-                                    []
-                                )
-
-                        Just _ ->
-                            Nothing
-                )
+        (List.map
+            (\{ x, y } ->
+                Html.div
+                    [ HA.style "position" "absolute"
+                    , HA.style "left" (px x)
+                    , HA.style "top" (px y)
+                    , HA.style "background-color" "purple"
+                    , HA.style "width" "20px"
+                    , HA.style "height" "20px"
+                    ]
+                    []
+            )
+            gameMapWalls
         )
 
 
