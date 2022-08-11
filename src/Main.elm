@@ -88,6 +88,8 @@ type alias Monster =
     , y : Float
     , health : Float
     , w : Float
+    , vx : Float
+    , vy : Float
     }
 
 
@@ -101,7 +103,8 @@ init _ =
 
         monsters =
             gameMapPieces "m"
-                |> List.map (\{ x, y } -> Monster x y 100 tileWidth)
+                |> List.map
+                    (\{ x, y } -> { x = x, y = y, health = 100, w = tileWidth, vx = 0, vy = 0 })
     in
     ( { keysDown = Set.empty
       , x = player.x
@@ -120,6 +123,7 @@ type Msg
     | KeyUp String
     | MouseDown ( Float, Float )
     | MonsterBullets (List Bullet)
+    | MonsterVelocities (List (Maybe ( Float, Float )))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -214,14 +218,40 @@ update msg model =
 
                                 newHealth =
                                     monster.health - toFloat bulletsHit * bulletDamage
+
+                                { x, y } =
+                                    let
+                                        updatedMonster =
+                                            { monster
+                                                | x = monster.x + monster.vx
+                                                , y = monster.y + monster.vy
+                                            }
+                                    in
+                                    if List.any (isOverlapping updatedMonster) gameMapWalls then
+                                        monster
+
+                                    else
+                                        updatedMonster
                             in
                             if newHealth <= 0 then
                                 Nothing
 
                             else
-                                Just { monster | health = newHealth }
+                                Just { monster | health = newHealth, x = x, y = y }
                         )
                         model.monsters
+
+                generateNewMonsterVelocities =
+                    Random.list (List.length newMonsters)
+                        (Random.weighted ( 90, Nothing )
+                            [ ( 1, Just ( 0, 0 ) )
+                            , ( 1, Just ( 0, 1 ) )
+                            , ( 1, Just ( 0, -1 ) )
+                            , ( 1, Just ( 1, 0 ) )
+                            , ( 1, Just ( -1, 0 ) )
+                            ]
+                        )
+                        |> Random.generate MonsterVelocities
 
                 newMonsterBullets =
                     List.filterMap
@@ -270,7 +300,7 @@ update msg model =
                 , monsters = newMonsters
                 , monsterBullets = newMonsterBullets
               }
-            , generateMonsterBullets
+            , Cmd.batch [ generateMonsterBullets, generateNewMonsterVelocities ]
             )
 
         KeyDown key ->
@@ -286,6 +316,24 @@ update msg model =
 
         MonsterBullets newMonsterBullets ->
             ( { model | monsterBullets = model.monsterBullets ++ newMonsterBullets }, Cmd.none )
+
+        MonsterVelocities newVelocities ->
+            ( { model
+                | monsters =
+                    List.map2
+                        (\maybeVelocity monster ->
+                            case maybeVelocity of
+                                Nothing ->
+                                    monster
+
+                                Just ( vx, vy ) ->
+                                    { monster | vx = vx, vy = vy }
+                        )
+                        newVelocities
+                        model.monsters
+              }
+            , Cmd.none
+            )
 
 
 isOverlapping : { a | x : Float, y : Float, w : Float } -> { b | x : Float, y : Float, w : Float } -> Bool
