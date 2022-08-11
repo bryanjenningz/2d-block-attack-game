@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import Array exposing (Array)
 import Browser
 import Browser.Events as BE
 import Html exposing (Html)
@@ -22,6 +23,37 @@ bulletWidth =
 bulletSpeed : Float
 bulletSpeed =
     5
+
+
+type alias GameMap =
+    Array (Array String)
+
+
+gameMap : GameMap
+gameMap =
+    [ "x    xxxxxxxxxxxxxxx"
+    , "x b  x             x"
+    , "x    x     b       x"
+    , "x    x             x"
+    , "x    x  xxxxxxxx   x"
+    , "x    x             x"
+    , "x    x             x"
+    , "x        b         x"
+    , "x       xxx  b     x"
+    , "x  xxx             x"
+    , "x    x        x    x"
+    , "x    x        x    x"
+    , "xxxxxx        x  b x"
+    , "x    x        x    x"
+    , "x p  x             x"
+    , "x    x             x"
+    , "x    x             x"
+    , "x          xxx     x"
+    , "x                  x"
+    , "xxxxxxxxxxxxxxxxxxxx"
+    ]
+        |> Array.fromList
+        |> Array.map (String.split "" >> Array.fromList)
 
 
 type alias Model =
@@ -286,7 +318,42 @@ view model =
                 )
                 (model.bullets ++ model.monsterBullets)
             )
+        , viewGameMap gameMap
         ]
+
+
+viewGameMap : GameMap -> Html msg
+viewGameMap map =
+    Html.div []
+        (List.range 0 (Array.length map - 1)
+            |> List.concatMap
+                (\y ->
+                    List.range 0 (Array.length map - 1)
+                        |> List.map (\x -> ( x, y ))
+                )
+            |> List.filterMap
+                (\( x, y ) ->
+                    case Array.get y gameMap |> Maybe.andThen (Array.get x) of
+                        Nothing ->
+                            Nothing
+
+                        Just "x" ->
+                            Just
+                                (Html.div
+                                    [ HA.style "position" "absolute"
+                                    , HA.style "left" (px (toFloat x * 20))
+                                    , HA.style "top" (px (toFloat y * 20))
+                                    , HA.style "background-color" "purple"
+                                    , HA.style "width" "20px"
+                                    , HA.style "height" "20px"
+                                    ]
+                                    []
+                                )
+
+                        Just _ ->
+                            Nothing
+                )
+        )
 
 
 px : Float -> String
