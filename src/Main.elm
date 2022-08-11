@@ -87,10 +87,16 @@ type alias Monster =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
+    let
+        player =
+            gameMapPieces "p"
+                |> List.head
+                |> Maybe.withDefault { x = 200, y = 200, w = 20 }
+    in
     ( { lastUpdate = 0
       , keysDown = Set.empty
-      , x = 200
-      , y = 200
+      , x = player.x
+      , y = player.y
       , mouseDown = Nothing
       , bullets = []
       , monsters = [ Monster 20 100 100 monsterWidth, Monster 300 350 100 monsterWidth ]
