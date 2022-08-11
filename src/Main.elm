@@ -15,6 +15,7 @@ type alias Model =
     , y : Float
     , mouseDown : Maybe ( Float, Float )
     , bullets : List Bullet
+    , monsters : List Monster
     }
 
 
@@ -26,6 +27,13 @@ type alias Bullet =
     }
 
 
+type alias Monster =
+    { x : Float
+    , y : Float
+    , health : Float
+    }
+
+
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { lastUpdate = 0
@@ -34,6 +42,7 @@ init _ =
       , y = 200
       , mouseDown = Nothing
       , bullets = []
+      , monsters = [ Monster 20 100 100, Monster 300 350 100 ]
       }
     , Cmd.none
     )
@@ -92,15 +101,55 @@ update msg model =
                                 newY =
                                     bullet.y + bullet.vy
                             in
-                            if newX < 0 || newX > 400 || newY < 0 || newY > 400 then
+                            if
+                                ((newX < 0) || (newX > 400))
+                                    || ((newY < 0) || (newY > 400))
+                                    || List.any
+                                        (\monster ->
+                                            (abs (bullet.x - monster.x) < 20)
+                                                && (abs (bullet.y - monster.y) < 20)
+                                        )
+                                        model.monsters
+                            then
                                 Nothing
 
                             else
                                 Just { bullet | x = newX, y = newY }
                         )
                         model.bullets
+
+                newMonsters =
+                    List.filterMap
+                        (\monster ->
+                            let
+                                bulletsHit =
+                                    List.filter
+                                        (\bullet ->
+                                            (abs (bullet.x - monster.x) < 20)
+                                                && (abs (bullet.y - monster.y) < 20)
+                                        )
+                                        model.bullets
+                                        |> List.length
+
+                                newHealth =
+                                    monster.health - toFloat bulletsHit * 20
+                            in
+                            if newHealth <= 0 then
+                                Nothing
+
+                            else
+                                Just { monster | health = newHealth }
+                        )
+                        model.monsters
             in
-            ( { model | y = model.y + dy, x = model.x + dx, bullets = newBullets }, Cmd.none )
+            ( { model
+                | y = model.y + dy
+                , x = model.x + dx
+                , bullets = newBullets
+                , monsters = newMonsters
+              }
+            , Cmd.none
+            )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
@@ -151,6 +200,19 @@ view model =
             , HA.style "top" (px model.y)
             ]
             []
+        , Html.div
+            []
+            (List.map
+                (\monster ->
+                    Html.div
+                        [ HA.class "monster"
+                        , HA.style "left" (px monster.x)
+                        , HA.style "top" (px monster.y)
+                        ]
+                        []
+                )
+                model.monsters
+            )
         , Html.div
             []
             (List.map
