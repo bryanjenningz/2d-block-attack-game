@@ -60,11 +60,9 @@ gameMap =
 
 
 type alias Model =
-    { lastUpdate : Float
-    , keysDown : Set String
+    { keysDown : Set String
     , x : Float
     , y : Float
-    , mouseDown : Maybe ( Float, Float )
     , bullets : List Bullet
     , monsters : List Monster
     , monsterBullets : List Bullet
@@ -100,11 +98,9 @@ init _ =
             gameMapPieces "m"
                 |> List.map (\{ x, y } -> Monster x y 100 monsterWidth)
     in
-    ( { lastUpdate = 0
-      , keysDown = Set.empty
+    ( { keysDown = Set.empty
       , x = player.x
       , y = player.y
-      , mouseDown = Nothing
       , bullets = []
       , monsters = monsters
       , monsterBullets = []
@@ -114,18 +110,17 @@ init _ =
 
 
 type Msg
-    = Tick Float
+    = Tick
     | KeyDown String
     | KeyUp String
     | MouseDown ( Float, Float )
-    | MouseUp
     | MonsterBullets (List Bullet)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Tick delta ->
+        Tick ->
             let
                 scalar =
                     if
@@ -280,15 +275,9 @@ update msg model =
             ( { model | keysDown = Set.remove key model.keysDown }, Cmd.none )
 
         MouseDown ( mouseX, mouseY ) ->
-            ( { model
-                | mouseDown = Just ( mouseX, mouseY )
-                , bullets = makeBullet model { x = mouseX, y = mouseY } :: model.bullets
-              }
+            ( { model | bullets = makeBullet model { x = mouseX, y = mouseY } :: model.bullets }
             , Cmd.none
             )
-
-        MouseUp ->
-            ( { model | mouseDown = Nothing }, Cmd.none )
 
         MonsterBullets newMonsterBullets ->
             ( { model | monsterBullets = model.monsterBullets ++ newMonsterBullets }, Cmd.none )
@@ -414,9 +403,9 @@ px x =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
-        [ BE.onAnimationFrameDelta Tick
+        [ BE.onAnimationFrame (\_ -> Tick)
         , BE.onKeyDown
             (JD.field "key" JD.string
                 |> JD.map KeyDown
@@ -430,7 +419,6 @@ subscriptions model =
                 (JD.field "clientX" JD.float)
                 (JD.field "clientY" JD.float)
             )
-        , BE.onMouseUp (JD.succeed MouseUp)
         ]
 
 
