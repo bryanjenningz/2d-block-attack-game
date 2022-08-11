@@ -19,6 +19,11 @@ bulletWidth =
     4
 
 
+bulletSpeed : Float
+bulletSpeed =
+    5
+
+
 type alias Model =
     { lastUpdate : Float
     , keysDown : Set String
@@ -178,7 +183,7 @@ update msg model =
                                 List.filterMap
                                     (\( bool, mon ) ->
                                         if bool then
-                                            Just (Bullet mon.x mon.y 3 3)
+                                            Just (makeBullet mon model)
 
                                         else
                                             Nothing
@@ -204,32 +209,9 @@ update msg model =
             ( { model | keysDown = Set.remove key model.keysDown }, Cmd.none )
 
         MouseDown ( mouseX, mouseY ) ->
-            let
-                dx =
-                    mouseX - model.x
-
-                dy =
-                    mouseY - model.y
-
-                angle =
-                    atan (dy / dx)
-
-                sign =
-                    if dx < 0 then
-                        -1
-
-                    else
-                        1
-            in
             ( { model
                 | mouseDown = Just ( mouseX, mouseY )
-                , bullets =
-                    Bullet
-                        model.x
-                        model.y
-                        (sign * 5 * cos angle)
-                        (sign * 5 * sin angle)
-                        :: model.bullets
+                , bullets = makeBullet model { x = mouseX, y = mouseY } :: model.bullets
               }
             , Cmd.none
             )
@@ -245,6 +227,28 @@ isOverlapping : Bullet -> { a | x : Float, y : Float } -> Bool
 isOverlapping bullet monster =
     ((bullet.x + bulletWidth > monster.x) && (bullet.x < monster.x + monsterWidth))
         && ((bullet.y + bulletWidth > monster.y) && (bullet.y < monster.y + monsterWidth))
+
+
+makeBullet : { a | x : Float, y : Float } -> { b | x : Float, y : Float } -> Bullet
+makeBullet a b =
+    let
+        dx =
+            b.x - a.x
+
+        dy =
+            b.y - a.y
+
+        angle =
+            atan (dy / dx)
+
+        sign =
+            if dx < 0 then
+                -1
+
+            else
+                1
+    in
+    Bullet a.x a.y (sign * bulletSpeed * cos angle) (sign * bulletSpeed * sin angle)
 
 
 view : Model -> Html Msg
