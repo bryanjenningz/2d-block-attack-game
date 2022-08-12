@@ -96,6 +96,28 @@ gameMaps =
       , "xxxxxxxxxxxxxxxxxxxx"
       ]
         |> toGameMap
+    , [ "xxxxxxxxxxxxdddddddx"
+      , "x       m  x       x"
+      , "x   m      x       x"
+      , "x          x       x"
+      , "x    x     x       x"
+      , "x    x     x       x"
+      , "x    x     x       x"
+      , "x          x       x"
+      , "x          x m     x"
+      , "x          x       x"
+      , "x    x     x       x"
+      , "x    x    mx       x"
+      , "x    x           m x"
+      , "x    x             x"
+      , "x    x  m          x"
+      , "x    xxxxxxxxxxxxxxx"
+      , "x                  x"
+      , "x                  x"
+      , "x                p x"
+      , "xxxxxxxxxxxxxxxxxxxx"
+      ]
+        |> toGameMap
     ]
         |> Array.fromList
 
