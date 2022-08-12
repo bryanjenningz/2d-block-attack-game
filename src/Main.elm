@@ -34,12 +34,20 @@ type alias GameMap =
     Array (Array String)
 
 
-gameMap : GameMap
-gameMap =
+toGameMap : List String -> GameMap
+toGameMap stringRows =
+    stringRows
+        |> Array.fromList
+        |> Array.map (String.split "" >> Array.fromList)
+
+
+defaultGameMap : GameMap
+defaultGameMap =
     -- x = wall
     -- m = monster spawn location
     -- p = player spawn location
-    [ "x    xxxxxxxxxxxxxxx"
+    -- d = door to next level
+    [ "xddddxxxxxxxxxxxxxxx"
     , "x    x             x"
     , "x    x     m    m  x"
     , "x    x             x"
@@ -60,8 +68,36 @@ gameMap =
     , "x                  x"
     , "xxxxxxxxxxxxxxxxxxxx"
     ]
+        |> toGameMap
+
+
+gameMaps : Array GameMap
+gameMaps =
+    [ defaultGameMap
+    , [ "xxxxxxxxxxxxxxxddddx"
+      , "x             x    x"
+      , "x   m              x"
+      , "x                  x"
+      , "xxxxxxxxxxxxxxxx   x"
+      , "x    x     x       x"
+      , "x    x     x       x"
+      , "x          x       x"
+      , "x          x m     x"
+      , "x          x       x"
+      , "x    x     x       x"
+      , "x    x    mx       x"
+      , "x    x           m x"
+      , "x    x             x"
+      , "x    x  m          x"
+      , "x    xxxxxxxx      x"
+      , "x       x          x"
+      , "x  p    x  m       x"
+      , "x       x          x"
+      , "xxxxxxxxxxxxxxxxxxxx"
+      ]
+        |> toGameMap
+    ]
         |> Array.fromList
-        |> Array.map (String.split "" >> Array.fromList)
 
 
 type alias Model =
@@ -73,6 +109,7 @@ type alias Model =
     , bullets : List Bullet
     , monsters : List Monster
     , monsterBullets : List Bullet
+    , gameMapIndex : Int
     }
 
 
@@ -95,16 +132,20 @@ type alias Monster =
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : Int -> ( Model, Cmd Msg )
+init gameMapIndex =
     let
+        gameMap =
+            Array.get gameMapIndex gameMaps
+                |> Maybe.withDefault defaultGameMap
+
         player =
-            gameMapPieces "p"
+            gameMapPieces "p" gameMap
                 |> List.head
                 |> Maybe.withDefault { x = 200, y = 200, w = tileWidth }
 
         monsters =
-            gameMapPieces "m"
+            gameMapPieces "m" gameMap
                 |> List.map
                     (\{ x, y } -> { x = x, y = y, health = 100, w = tileWidth, vx = 0, vy = 0 })
     in
@@ -116,6 +157,7 @@ init _ =
       , bullets = []
       , monsters = monsters
       , monsterBullets = []
+      , gameMapIndex = gameMapIndex
       }
     , Cmd.none
     )
@@ -135,6 +177,10 @@ update msg model =
     case msg of
         Tick ->
             let
+                gameMap =
+                    Array.get model.gameMapIndex gameMaps
+                        |> Maybe.withDefault defaultGameMap
+
                 scalar =
                     if
                         List.all (\keys -> List.any (\key -> Set.member key model.keysDown) keys)
@@ -169,7 +215,7 @@ update msg model =
                     if
                         List.any
                             (\wall -> isOverlapping wall { x = model.x + dx, y = model.y, w = tileWidth })
-                            gameMapWalls
+                            (gameMapWalls gameMap)
                     then
                         model.x
 
@@ -180,7 +226,7 @@ update msg model =
                     if
                         List.any
                             (\wall -> isOverlapping wall { x = model.x, y = model.y + dy, w = tileWidth })
-                            gameMapWalls
+                            (gameMapWalls gameMap)
                     then
                         model.y
 
@@ -206,7 +252,7 @@ update msg model =
                                 ((newX < 0) || (newX > 400))
                                     || ((newY < 0) || (newY > 400))
                                     || List.any (isOverlapping bullet) model.monsters
-                                    || List.any (isOverlapping bullet) gameMapWalls
+                                    || List.any (isOverlapping bullet) (gameMapWalls gameMap)
                             then
                                 Nothing
 
@@ -236,7 +282,10 @@ update msg model =
                                                 , y = monster.y + monster.vy
                                             }
                                     in
-                                    if List.any (isOverlapping updatedMonster) gameMapWalls then
+                                    if
+                                        List.any (isOverlapping updatedMonster)
+                                            (gameMapWalls gameMap)
+                                    then
                                         monster
 
                                     else
@@ -276,7 +325,7 @@ update msg model =
                                 ((newX < 0) || (newX > 400))
                                     || ((newY < 0) || (newY > 400))
                                     || isOverlapping bullet model
-                                    || List.any (isOverlapping bullet) gameMapWalls
+                                    || List.any (isOverlapping bullet) (gameMapWalls gameMap)
                             then
                                 Nothing
 
@@ -301,17 +350,24 @@ update msg model =
                                     (List.map2 (\x y -> ( x, y )) bools model.monsters)
                             )
                         |> Random.generate MonsterBullets
+
+                shouldUpdateGameMap =
+                    List.any (isOverlapping model) (gameMapPieces "d" gameMap)
             in
-            ( { model
-                | x = newPlayerX
-                , y = newPlayerY
-                , health = newPlayerHealth
-                , bullets = newBullets
-                , monsters = newMonsters
-                , monsterBullets = newMonsterBullets
-              }
-            , Cmd.batch [ generateMonsterBullets, generateNewMonsterVelocities ]
-            )
+            if shouldUpdateGameMap then
+                init (model.gameMapIndex + 1 |> modBy (Array.length gameMaps))
+
+            else
+                ( { model
+                    | x = newPlayerX
+                    , y = newPlayerY
+                    , health = newPlayerHealth
+                    , bullets = newBullets
+                    , monsters = newMonsters
+                    , monsterBullets = newMonsterBullets
+                  }
+                , Cmd.batch [ generateMonsterBullets, generateNewMonsterVelocities ]
+                )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
@@ -421,12 +477,12 @@ view model =
                 )
                 (model.bullets ++ model.monsterBullets)
             )
-        , viewGameMapWalls
+        , viewGameMapWalls (Array.get model.gameMapIndex gameMaps |> Maybe.withDefault defaultGameMap)
         ]
 
 
-gameMapPieces : String -> List { x : Float, y : Float, w : Float }
-gameMapPieces piece =
+gameMapPieces : String -> GameMap -> List { x : Float, y : Float, w : Float }
+gameMapPieces piece gameMap =
     List.range 0 (Array.length gameMap - 1)
         |> List.concatMap
             (\y ->
@@ -448,13 +504,13 @@ gameMapPieces piece =
             )
 
 
-gameMapWalls : List { x : Float, y : Float, w : Float }
-gameMapWalls =
-    gameMapPieces "x"
+gameMapWalls : GameMap -> List { x : Float, y : Float, w : Float }
+gameMapWalls gameMap =
+    gameMapPieces "x" gameMap
 
 
-viewGameMapWalls : Html msg
-viewGameMapWalls =
+viewGameMapWalls : GameMap -> Html msg
+viewGameMapWalls gameMap =
     Html.div []
         (List.map
             (\{ x, y } ->
@@ -468,7 +524,7 @@ viewGameMapWalls =
                     ]
                     []
             )
-            gameMapWalls
+            (gameMapWalls gameMap)
         )
 
 
@@ -497,7 +553,7 @@ subscriptions _ =
         ]
 
 
-main : Program () Model Msg
+main : Program Int Model Msg
 main =
     Browser.element
         { init = init
