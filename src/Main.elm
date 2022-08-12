@@ -68,6 +68,8 @@ type alias Model =
     { keysDown : Set String
     , x : Float
     , y : Float
+    , health : Float
+    , w : Float
     , bullets : List Bullet
     , monsters : List Monster
     , monsterBullets : List Bullet
@@ -109,6 +111,8 @@ init _ =
     ( { keysDown = Set.empty
       , x = player.x
       , y = player.y
+      , w = tileWidth
+      , health = 100
       , bullets = []
       , monsters = monsters
       , monsterBullets = []
@@ -183,6 +187,11 @@ update msg model =
                     else
                         model.y + dy
 
+                newPlayerHealth =
+                    List.filter (isOverlapping model) model.monsterBullets
+                        |> (List.length >> toFloat)
+                        |> (\bullets -> model.health - bullets * bulletDamage)
+
                 newBullets =
                     List.filterMap
                         (\bullet ->
@@ -243,7 +252,7 @@ update msg model =
 
                 generateNewMonsterVelocities =
                     Random.list (List.length newMonsters)
-                        (Random.weighted ( 90, Nothing )
+                        (Random.weighted ( 95, Nothing )
                             [ ( 1, Just ( 0, 0 ) )
                             , ( 1, Just ( 0, 1 ) )
                             , ( 1, Just ( 0, -1 ) )
@@ -266,7 +275,7 @@ update msg model =
                             if
                                 ((newX < 0) || (newX > 400))
                                     || ((newY < 0) || (newY > 400))
-                                    || isOverlapping bullet { x = model.x, y = model.y, w = tileWidth }
+                                    || isOverlapping bullet model
                                     || List.any (isOverlapping bullet) gameMapWalls
                             then
                                 Nothing
@@ -296,6 +305,7 @@ update msg model =
             ( { model
                 | x = newPlayerX
                 , y = newPlayerY
+                , health = newPlayerHealth
                 , bullets = newBullets
                 , monsters = newMonsters
                 , monsterBullets = newMonsterBullets
@@ -371,6 +381,15 @@ view model =
             [ HA.class "player"
             , HA.style "left" (px model.x)
             , HA.style "top" (px model.y)
+            , HA.style "background-color" <|
+                if model.health > 50 then
+                    "#aaa"
+
+                else if model.health > 0 then
+                    "orange"
+
+                else
+                    "red"
             ]
             []
         , Html.div
