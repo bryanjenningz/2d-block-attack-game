@@ -382,8 +382,11 @@ view model =
             , HA.style "left" (px model.x)
             , HA.style "top" (px model.y)
             , HA.style "background-color" <|
-                if model.health > 50 then
+                if model.health >= 100 then
                     "#aaa"
+
+                else if model.health > 50 then
+                    "yellow"
 
                 else if model.health > 0 then
                     "orange"
