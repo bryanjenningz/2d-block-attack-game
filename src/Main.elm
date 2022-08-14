@@ -300,8 +300,8 @@ update msg model =
                                     let
                                         updatedMonster =
                                             { monster
-                                                | x = monster.x + monster.vx
-                                                , y = monster.y + monster.vy
+                                                | x = clamp 0 400 (monster.x + monster.vx)
+                                                , y = clamp 0 400 (monster.y + monster.vy)
                                             }
                                     in
                                     if
