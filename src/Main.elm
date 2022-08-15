@@ -10,6 +10,11 @@ import Random
 import Set exposing (Set)
 
 
+screenWidth : Float
+screenWidth =
+    400
+
+
 tileWidth : Float
 tileWidth =
     20
@@ -164,7 +169,7 @@ init gameMapIndex =
         player =
             gameMapPieces "p" gameMap
                 |> List.head
-                |> Maybe.withDefault { x = 200, y = 200, w = tileWidth }
+                |> Maybe.withDefault { x = screenWidth / 2, y = screenWidth / 2, w = tileWidth }
 
         monsters =
             gameMapPieces "m" gameMap
@@ -271,8 +276,8 @@ update msg model =
                                     bullet.y + bullet.vy
                             in
                             if
-                                ((newX < 0) || (newX > 400))
-                                    || ((newY < 0) || (newY > 400))
+                                ((newX < 0) || (newX > screenWidth))
+                                    || ((newY < 0) || (newY > screenWidth))
                                     || List.any (isOverlapping bullet) model.monsters
                                     || List.any (isOverlapping bullet) (gameMapWalls gameMap)
                             then
@@ -300,8 +305,8 @@ update msg model =
                                     let
                                         updatedMonster =
                                             { monster
-                                                | x = clamp 0 400 (monster.x + monster.vx)
-                                                , y = clamp 0 400 (monster.y + monster.vy)
+                                                | x = clamp 0 screenWidth (monster.x + monster.vx)
+                                                , y = clamp 0 screenWidth (monster.y + monster.vy)
                                             }
                                     in
                                     if
@@ -344,8 +349,8 @@ update msg model =
                                     bullet.y + bullet.vy
                             in
                             if
-                                ((newX < 0) || (newX > 400))
-                                    || ((newY < 0) || (newY > 400))
+                                ((newX < 0) || (newX > screenWidth))
+                                    || ((newY < 0) || (newY > screenWidth))
                                     || isOverlapping bullet model
                                     || List.any (isOverlapping bullet) (gameMapWalls gameMap)
                             then
@@ -559,14 +564,8 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ BE.onAnimationFrame (\_ -> Tick)
-        , BE.onKeyDown
-            (JD.field "key" JD.string
-                |> JD.map KeyDown
-            )
-        , BE.onKeyUp
-            (JD.field "key" JD.string
-                |> JD.map KeyUp
-            )
+        , BE.onKeyDown (JD.map KeyDown (JD.field "key" JD.string))
+        , BE.onKeyUp (JD.map KeyUp (JD.field "key" JD.string))
         , BE.onMouseDown
             (JD.map2 (\x y -> MouseDown ( x, y ))
                 (JD.field "clientX" JD.float)
