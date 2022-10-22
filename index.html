@@ -1,0 +1,47 @@
+<html>
+  <head>
+    <title>2D Box Attack</title>
+    <style>
+      body {
+        background-color: #333;
+        margin: 0;
+        cursor: crosshair;
+        user-select: none;
+      }
+      .container {
+        position: relative;
+        width: 400px;
+        height: 400px;
+        background-color: black;
+      }
+      .player {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: #aaa;
+      }
+      .monster {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: blue;
+      }
+      .bullet {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background-color: cyan;
+      }
+    </style>
+  </head>
+  <body>
+    <main></main>
+    <script src="build/elm.js"></script>
+    <script>
+      const app = Elm.Main.init({
+        node: document.querySelector("main"),
+        flags: 0,
+      });
+    </script>
+  </body>
+</html>
